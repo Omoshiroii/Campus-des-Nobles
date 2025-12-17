@@ -1,47 +1,55 @@
-#include "menu.h"
 #include <iostream>
+#include "menu.h"
+#include "M_formateur.h"
+#include "M_etudiant.h"
+#include "M_Admin.h"
 
-Menu::Menu(Etablissement &e) : ecole(e) {}
+using namespace std;
 
-void Menu::menuEtudiant() {
-    std::cout << "--- Menu Etudiant ---\n";
-    std::cout << "Enter student ID: ";
-    int id; std::cin >> id;
-    auto p = ecole.rechercherParId(id);
-    if (!p) { std::cout << "Not found.\n"; return; }
-    auto etu = std::dynamic_pointer_cast<Etudiant>(p);
-    if (!etu) { std::cout << "Not an Etudiant.\n"; return; }
-    etu->afficher();
-    std::cout << "Press Enter to continue..."; std::cin.ignore(); std::cin.get();
-}
+Menu::Menu(){}
+Menu::~Menu(){}
 
-void Menu::menuProfesseur() {
-    std::cout << "--- Menu Professeur ---\n";
-    std::cout << "1) Register grade to student\n2) Show all persons\n0) Back\nChoice: ";
-    int c; std::cin >> c;
-    if (c == 1) {
-        int sid, mid; double val;
-        std::cout << "Student ID: "; std::cin >> sid;
-        std::cout << "Module ID: "; std::cin >> mid;
-        std::cout << "Value: "; std::cin >> val;
-        if (ecole.enregistrerNote(sid, mid, val)) std::cout << "Note registered.\n";
-        else std::cout << "Failed to register note.\n";
-    } else if (c == 2) {
-        ecole.afficherTout();
-    }
-}
-
-void Menu::run() {
-    while (true) {
-        std::cout << "\n=== School Management Prototype ===\n";
-        std::cout << "1) Etudiant\n2) Professeur\n3) Show all\n0) Quit\nChoice: ";
-        int ch; std::cin >> ch;
-        if (ch == 0) break;
-        switch (ch) {
-            case 1: menuEtudiant(); break;
-            case 2: menuProfesseur(); break;
-            case 3: ecole.afficherTout(); break;
-            default: std::cout << "Invalid\n"; break;
+void Menu::start(){
+    int choice;
+    bool running = true;
+    
+    while(running){
+        cout << "\n------- Bienvenue dans le Campus des Nobles -------\n";
+        cout << "1. Formateur\n";
+        cout << "2. Etudiant\n";
+        cout << "3. Administrateur\n";
+        cout << "4. Quitter\n";
+        cout << "Votre choix : ";
+        cin >> choice;
+        
+        switch(choice){
+            case 1: {
+                M_formateur menuF;
+                menuF.menuformateur();
+                break;
+            }
+            case 2: {
+                M_etudiant menuE;
+                menuE.menuEtudiant();
+                break;
+            }
+            case 3: {
+                M_Admin menuA;
+                menuA.menuAdmin();
+                break;
+            }
+            case 4:
+                running = false;
+                cout << "Au revoir\n";
+                break;
+            default:
+                cout << "Choix invalide.\n";
         }
     }
+}
+
+int main() {
+    Menu menu;
+    menu.start();
+    return 0;
 }

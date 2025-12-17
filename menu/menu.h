@@ -1,5 +1,10 @@
 #include <iostream>
 
-int main(){
-    //
-}
+class Menu {
+public:
+    Menu();
+    ~Menu();
+    void start();
+};
+
+#endif
