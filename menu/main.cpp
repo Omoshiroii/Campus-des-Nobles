@@ -1,6 +1,9 @@
-// Campus des nobles (pour fichiers .txt)
-// pour le test initial, on peut se connecter avec l'admin (Nom d'utilisateur: abcd, Mot de passe: 1234)
-// pour le test initial, on peut quitter le programme dans le login en entrant (Nom d'utilisateur: 0)
+// Campus des nobles - Alpha - Projet C++ Programmation Orientée Objet
+// Taha Zerrad, Salsabil Benhnich, Oussama El Attabi, Rania Mahfoud, Badr Al Fezghari
+// Bases de donnéees représentées par des fichiers .txt
+
+// !! pour le test initial, on peut se connecter avec l'admin (Nom d'utilisateur: abcd, Mot de passe: 1234)
+// !! pour le test initial, on peut quitter le programme dans le login en entrant (Nom d'utilisateur: 0)
 
 #include <iostream>
 #include <vector>
@@ -19,8 +22,8 @@ protected:
     string motDePasse;
 public:
     Personne(int id, string nom, string prenom, string login, string mdp)
-    : id(id), nom(nom), prenom(prenom), login(login), motDePasse(mdp) {}
-    virtual ~Personne() {}
+    : id(id), nom(nom), prenom(prenom), login(login), motDePasse(mdp) { }
+    virtual ~Personne() { }
 
     virtual string getPermissions() const = 0;
     int getId() const { return id; }
@@ -42,7 +45,7 @@ private:
     int groupe;
 public:
     Etudiant(int id, string nom, string prenom, string login, string mdp, int groupe)
-    : Personne(id, nom, prenom, login, mdp), groupe(groupe) {}
+    : Personne(id, nom, prenom, login, mdp), groupe(groupe) { }
 
     string getPermissions() const override { return "ETUDIANT"; }
     int getGroupe() const { return groupe; }
@@ -59,7 +62,7 @@ protected:
     string poste;
 public:
     Employe(int id, string nom, string prenom, string login, string mdp, string poste)
-    : Personne(id, nom, prenom, login, mdp), poste(poste) {}
+    : Personne(id, nom, prenom, login, mdp), poste(poste) { }
 };
 
 class Enseignant : public Employe {
@@ -67,7 +70,7 @@ private:
     int module;
 public:
     Enseignant(int id, string nom, string prenom, int idmod, string login, string mdp)
-    : Employe(id, nom, prenom, login, mdp, "Enseignant"), module(idmod) {}
+    : Employe(id, nom, prenom, login, mdp, "Enseignant"), module(idmod) { }
 
     string getPermissions() const override { return "ENSEIGNANT"; }
     int getModule() { return module; }
@@ -82,7 +85,7 @@ public:
 class Administratif : public Employe {
 public:
     Administratif(int id, string nom, string prenom, string login, string mdp)
-    : Employe(id, nom, prenom, login, mdp, "Administratif") {}
+    : Employe(id, nom, prenom, login, mdp, "Administratif") { }
 
     string getPermissions() const override { return "ADMIN"; }
 
@@ -98,7 +101,7 @@ private:
     float valeur;
 public:
     Note(int idEtu, int idMod, float val)
-    : idEtudiant(idEtu), idModule(idMod), valeur(val) {}
+    : idEtudiant(idEtu), idModule(idMod), valeur(val) { }
 
     int getIdEtudiant() const { return idEtudiant; }
     int getIdModule() const { return idModule; }
@@ -115,7 +118,7 @@ private:
     string nom;
 public:
     Module(int i, string n)
-    : id(i), nom(n) {}
+    : id(i), nom(n) { }
 
     int getId() const { return id; }
     string getNom() const { return nom; }
@@ -130,7 +133,7 @@ private:
     int id;
     int effectif;
 public:
-    Groupe(int i, int e) : id(i), effectif(e) {}
+    Groupe(int i, int e) : id(i), effectif(e) { }
 
     int getId() const { return id; }
     int getEffectif() const { return effectif; }
@@ -251,7 +254,7 @@ public:
         }
         file.close();
    
-        // pour le test initial, il existe trois modules
+        // !! pour le test initial, il existe trois modules
         if(!modules.size()){
             ofstream fichier;
             fichier.open("modules.txt");
@@ -264,7 +267,7 @@ public:
             fichier.close();
         }
 
-        // pour le test initial, il existe un admin (Nom d'utilisateur: abcd, Mot de passe: 1234)
+        // !! pour le test initial, il existe un admin (Nom d'utilisateur: abcd, Mot de passe: 1234)
         if(!admins.size()){
             ofstream fichier;
             fichier.open("administratifs.txt");
@@ -331,24 +334,28 @@ public:
     }
 
     void ajouterNote(int idEtudiant, int idModule, float valeur) {
-        bool existe = false;
+        bool existe1 = false;
+        bool existe2 = false;
         for(auto &e : etudiants) {
             if(e.getId() == idEtudiant) {
-                existe = true;
+                existe1 = true;
                 break;
             }
         }
-        if(!existe) {
+        if(!existe1) {
             cout << "\nEtudiant introuvable.\n";
             return;
         }
-        if(modules.size() != 0) {
-            if(idModule > modules.back().getId() || idModule < modules.front().getId()) {
-                cout << "\nModule introuvable.\n";
-                return;
+        for(auto &m : modules) {
+            if(m.getId() == idModule) {
+                existe2 = true;
+                break;
             }
         }
-        if(!modules.size()) { cout << "\nModule introuvable.\n"; return; }
+        if(!existe2) {
+            cout << "\nModule introuvable.\n";
+            return;
+        }
         if(valeur > 20 || valeur < 0){
             cout << "\nNote invalide.\n";
             return;
@@ -359,12 +366,7 @@ public:
 
     void supprimerNote(int idEtudiant, int idModule){
         bool existe = false;
-        for(auto &e : etudiants) {
-            if(e.getId() == idEtudiant) {
-                existe = true;
-                break;
-            }
-        }
+        for(auto &e : etudiants) { if(e.getId() == idEtudiant) { existe = true; break; } }
         if(!existe) {
             cout << "\nEtudiant introuvable.\n";
             return;
@@ -476,10 +478,7 @@ public:
     
     void adminConsulterModules() const{
         bool existe = false;
-        for(auto &m : modules) {
-            existe = true;
-            cout << "\n" << to_string(m.getId()) << ". " << m.getNom(); 
-        }
+        for(auto &m : modules) { existe = true; cout << "\n" << to_string(m.getId()) << ". " << m.getNom(); }
         cout << "\n";
         if(!existe) cout << "Aucun module.\n";
     }
@@ -535,6 +534,7 @@ public:
         int groupe;
         string nom, prenom, login, mdp;
         bool deja = false;
+        bool existe = false;
         
         cout << "\nNom: ";
         cin >> nom;
@@ -547,13 +547,8 @@ public:
         cout << "Groupe: ";
         cin >> groupe;
 
-        if(groupes.size() != 0){
-            if(groupe > groupes.back().getId() || groupe < groupes.front().getId()){
-                cout << "\nGroupe introuvable.\n";
-                return;
-            }
-        }
-        if(!groupes.size()) { cout << "\nGroupe introuvable.\n"; return; }
+        for(auto &g : groupes) { if(g.getId() == groupe) { existe = true; break; } }
+        if(!existe){ cout << "\nGroupe introuvable.\n"; return; }
 
         for (const auto& e : etudiants) { if (e.getLogin() == login) { deja = true; break; } }
         for (const auto& ens : enseignants) { if (ens.getLogin() == login) { deja = true; break; } }
@@ -567,10 +562,12 @@ public:
             for(auto &g : groupes) { if(g.getId() == groupe){ g.incrementer(); break; } }
         }
     }
+
     void adminAjouterEnseignant(){
         int id;
         string nom, prenom, login, mdp;
         bool deja = false;
+        bool existe = false;
 
         cout << "\nNom: ";
         cin >> nom;
@@ -583,10 +580,8 @@ public:
         cout << "Mot de passe: ";
         cin >> mdp;
 
-        if(id > modules.size() || id <= 0){
-            cout << "\nModule introuvable.\n";
-            return;
-        }
+        for(auto &m : modules) { if(m.getId() == id) { existe = true; break; } }
+        if(!existe){ cout << "\nModule introuvable.\n"; return; }
 
         for (const auto& e : etudiants) { if (e.getLogin() == login) { deja = true; break; } }
         for (const auto& ens : enseignants) { if (ens.getLogin() == login) { deja = true; break; } }
@@ -685,8 +680,11 @@ public:
                         }
                         case 5: {
                             int gg;
+                            bool existe = false;
                             cout << "\nNouveau groupe: ";
                             cin >> gg;
+                            for(auto &g : groupes) { if(g.getId() == gg){ existe = true; break; } }
+                            if(!existe) { cout << "\nGroupe introuvable.\n"; return; }
                             for(auto &g : groupes) { if(g.getId() == e.getGroupe()){ g.decrementer(); break; } }
                             e.setGroupe(gg);
                             for(auto &g : groupes) { if(g.getId() == gg){ g.incrementer(); break; } }
@@ -764,14 +762,12 @@ public:
 
     void adminExporterEtudiantsParGroupe() {
         int groupe;
+        bool existe = false;
         cout << "\nNumero du groupe: ";
         cin >> groupe;
-        if(!groupes.size()) { cout << "\nGroupe introuvable\n"; return; }
-        else if(groupes.size() != 0){
-            if(groupe > groupes.back().getId() || groupe < groupes.front().getId())
-            { cout << "\nGroupe introuvable\n"; return; }
-        } else
-            exporterEtudiantsParGroupe(groupe);
+        for(auto &g : groupes) { if(g.getId() == groupe) { existe = true; break; } }
+        if(!existe) { cout << "\nGroupe introuvable\n"; return; }
+        exporterEtudiantsParGroupe(groupe);
     }
 
     void adminExporterEnseignants() {
@@ -779,7 +775,8 @@ public:
     }
 };
 
-int main() {
+int main()
+{
     Etablissement EMSI;
     int choix;
     bool connecte = false;
@@ -795,7 +792,7 @@ int main() {
         if(!connecte){
             cout << "Nom d'utilisateur: ";
             cin >> login;
-            if(login == "0") { programme = false; break; } // pour le test initial
+            if(login == "0") { programme = false; break; } // !! pour le test initial
             cout << "Mot de passe: ";
             cin >> mdp;
             user = EMSI.authentifier(login, mdp);
@@ -803,6 +800,7 @@ int main() {
                 cout << "\nAuthentification echouee\n" << endl;
                 cout << "Nom d'utilisateur: ";
                 cin >> login;
+                if(login == "0") { programme = false; return 0; } // !! pour le test initial
                 cout << "Mot de passe: ";
                 cin >> mdp;
                 user = EMSI.authentifier(login, mdp);
@@ -829,7 +827,7 @@ int main() {
                             EMSI.etudiantExporterNotes(*etu);
                         break;
                         case 3:
-                            user = nullptr; cout << "\nUtilisateur se deconnecte\n" << endl; connecte = false;
+                            user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false;
                         break;
                         default:
                             cout << "\nChoix invalide\n";
@@ -863,7 +861,7 @@ int main() {
                             EMSI.enseignantConsulterNotes(*ens);
                         break;
                         case 5:
-                            user = nullptr; cout << "\nUtilisateur se deconnecte\n" << endl; connecte = false;
+                            user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false;
                         break;
                         default:
                             cout << "\nChoix invalide\n";
@@ -937,7 +935,7 @@ int main() {
                             EMSI.adminSupprimerModule();
                         break;
                         case 15:
-                            user = nullptr; cout << "\nUtilisateur se deconnecte\n" << endl; connecte = false;
+                            user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false;
                         break;
                         default:
                             cout << "\nChoix invalide\n";
@@ -946,16 +944,8 @@ int main() {
             }
         }
     }
-    
+
     EMSI.sauvegarder();
     
     return 0;
 }
-
-// des idées supplémentaires à ajouter, on peut les faire après:
-// - surcharge d'opérateur << dans chacune des classes
-// - surcharge de fonction de consultation
-// - confirmation avant de supprimer étudiant, enseignant ou note
-// - dossiers pour distinguer les rapports, les fichiers de base de donnees, les fichiers de programme et les headers
-// - gestion des erreurs par try throw catch pour les inputs
-// - fichier .log pour stocker chaque action [Date | Action | User]
