@@ -66,8 +66,8 @@ CampusDesNobles/
 ├── src/              # Fichiers source (.cpp)
 ├── data/             # Base de données (fichiers .txt)
 ├── exports/          # Fichiers exportés (.csv)
-├── docs/             # Documentation
-└── Makefile          # Configuration de compilation
+└──docs/             # Documentation
+
 
 ## 📊 Base de Données
 
