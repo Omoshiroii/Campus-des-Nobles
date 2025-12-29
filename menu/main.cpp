@@ -5,6 +5,24 @@
 // !! pour le test initial, on peut se connecter avec l'admin (Nom d'utilisateur: abcd, Mot de passe: 1234)
 // !! pour le test initial, on peut quitter le programme dans le login en entrant (Nom d'utilisateur: 0)
 
+// NOUVEAUX UPDATES:
+    // 1. Surcharge de l'opérateur + pour la classe Note:
+        // On peut ajouter une valeur à la valeur d'une note (Note + float)
+        // On peut ajouter la valeur d'une note à la valeur une autre (Note + Note)
+    // 2. Surcharge de l'opérateur = pour la classe Note:
+        // On peut affecter une valeur à la valeur d'une note (Note = float)
+        // On peut affecter la valeur d'une note à la valeur une autre (Note = Note)
+    // 3. Empechement d'ajouter une note à un étudiant qui a déja une note.
+        // Si l'étudiant a déjà une note dans ce module, on affiche "Essayez de modifier"
+    // 4. Modification d'une note.
+        // Enseignant peut modifier la note d'un étudiant dans le module
+    // 5. Surcharge de l'opérateur << pour la classe Note:
+        // Pour afficher un objet de classe Note, on affiche sa valeur
+    // 6. Calcul de moyenne par groupe.
+        // Selon son module, l'enseignant peut calculer la moyenne des notes d'un groupe.
+
+/* Références: 1) 132, 2) 140, 3) 410, 4) 530, 5) 153, 6) 546. */
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -110,6 +128,32 @@ public:
     string afficher() const {
         return to_string(idEtudiant) + ";" + to_string(idModule) + ";" + to_string(valeur);
     }
+
+    Note operator+(const Note& N) {
+        return Note(this->idEtudiant, this->idModule, this->valeur + N.valeur);
+    }
+
+    Note operator+(const float n) {
+        return Note(this->idEtudiant, this->idModule, this->valeur + n);
+    }
+
+    Note& operator=(const Note& N) {
+        if(this == &N){
+            return *this;
+        }
+        this->valeur = N.valeur;
+        return *this;
+    }
+
+    Note& operator=(const float n) {
+        this->valeur = n;
+        return *this;
+    }
+
+    friend ostream& operator<<(ostream& os, const Note& N) {
+        os << N.valeur;
+        return os;
+    }
 };
 
 class Module {
@@ -137,7 +181,7 @@ public:
 
     int getId() const { return id; }
     int getEffectif() const { return effectif; }
-    
+
     void incrementer() { effectif++; }
     void decrementer() { effectif--; }
 
@@ -253,7 +297,7 @@ public:
             notes.emplace_back(idEtu, idMod, note);
         }
         file.close();
-   
+
         // !! pour le test initial, il existe trois modules
         if(!modules.size()){
             ofstream fichier;
@@ -336,6 +380,7 @@ public:
     void ajouterNote(int idEtudiant, int idModule, float valeur) {
         bool existe1 = false;
         bool existe2 = false;
+        bool existe3 = true;
         for(auto &e : etudiants) {
             if(e.getId() == idEtudiant) {
                 existe1 = true;
@@ -354,6 +399,15 @@ public:
         }
         if(!existe2) {
             cout << "\nModule introuvable.\n";
+            return;
+        }
+        for(auto &n : notes) {
+            if(n.getIdEtudiant() == idEtudiant && n.getIdModule() == idModule) {
+                existe3 = false;
+            }
+        }
+        if(!existe3) {
+            cout << "\nEtudiant deja a une note dans ce module. Essayez de modifier la note.\n";
             return;
         }
         if(valeur > 20 || valeur < 0){
@@ -377,9 +431,38 @@ public:
                     if (a->getIdEtudiant() == e->getId() && a->getIdModule() == idModule) {
                         a = notes.erase(a);
                         cout << "\nNote supprimee.\n";
+                        break;
                     } else {
                         ++a;
                     }
+                }
+            }
+        }
+    }
+
+    void modifierNote(int idEtudiant, int idModule){
+        bool existe = false;
+        for(auto &e : etudiants) { if(e.getId() == idEtudiant) { existe = true; break; } }
+        if(!existe) {
+            cout << "\nEtudiant introuvable.\n";
+            return;
+        }
+        for(auto e = etudiants.begin(); e != etudiants.end(); ++e) {
+            if (e->getId() == idEtudiant) {
+                for(auto &n : notes) {
+                    if (n.getIdEtudiant() == idEtudiant && n.getIdModule() == idModule) {
+                        float note;
+                        cout << "Donnez la nouvelle note: ";
+                        cin >> note;
+                        if(note > 20 || note < 0)
+                            cout << "\nEchec de modification de note.\n";
+                        else {
+                            n = note;
+                            cout << "\nNote modifiee.\n";
+                        }
+                    }/* else {
+                        ++a;
+                    }*/
                 }
             }
         }
@@ -444,12 +527,47 @@ public:
         supprimerNote(idEtu, e.getModule());
     }
 
+    void enseignantModifierNote(Enseignant &e) {
+        int idEtu;
+        cout << "\nID Etudiant: ";
+        cin >> idEtu;
+        modifierNote(idEtu, e.getModule());
+    }
+
     void enseignantConsulterNotes(Enseignant &e) const {
         cout << "\n--- Liste des notes ---\n";
         for(const auto &n : notes) {
             if(n.getIdModule() == e.getModule()){
                 cout << "Etudiant " << n.getIdEtudiant() << " | Note " << n.getValeur() << "\n";
             }
+        }
+    }
+
+    void enseignantCalculerMoyenneGroupe(Enseignant &ens) const {
+        int id;
+        bool existe = false;
+        bool existe2 = false;
+        float moyenne = 0;
+        int etudtrouve = 0;
+        cout << "\nID du groupe: ";
+        cin >> id;
+        for(auto &g : groupes) { if(g.getId() == id) { existe = true; break; } }
+        for(auto &n : notes) {
+            for(auto &e : etudiants) {
+                if(n.getIdEtudiant() == e.getId() && e.getGroupe() == id && n.getIdModule() == ens.getModule()){
+                    moyenne += n.getValeur();
+                    existe2 = true;
+                    etudtrouve++;
+                }
+            }
+        }
+        if(!existe)
+            cout << "\nGroupe introuvable.\n";
+        else if(!existe2)
+            cout << "\nAucune note a calculer.\n";
+        else {
+            moyenne /= etudtrouve;
+            cout << "\nMoyenne de groupe " << id << " est " << moyenne << "." << endl;
         }
     }
 
@@ -475,7 +593,7 @@ public:
         cout << "Nom: " << p.getNom() << "\n";
         cout << "Prenom: " << p.getPrenom() << "\n";
     }
-    
+
     void adminConsulterModules() const{
         bool existe = false;
         for(auto &m : modules) { existe = true; cout << "\n" << to_string(m.getId()) << ". " << m.getNom(); }
@@ -529,13 +647,13 @@ public:
         }
         cout << "\nGroupe introuvable.\n";
     }
-    
+
     void adminAjouterEtudiant(){
         int groupe;
         string nom, prenom, login, mdp;
         bool deja = false;
         bool existe = false;
-        
+
         cout << "\nNom: ";
         cin >> nom;
         cout << "Prenom: ";
@@ -840,8 +958,10 @@ int main()
                     cout << "\n1. Consulter mes donnees\n";
                     cout << "2. Ajouter une note\n";
                     cout << "3. Supprimer une note\n";
-                    cout << "4. Consulter toutes les notes\n";
-                    cout << "5. Deconnexion\n";
+                    cout << "4. Modifier une note\n";
+                    cout << "5. Consulter toutes les notes\n";
+                    cout << "6. Calculer la moyenne d'une groupe\n";
+                    cout << "7. Deconnexion\n";
                     cout << "0. Quitter\n" << endl;
                     cin >> choix;
                     switch(choix) {
@@ -858,15 +978,21 @@ int main()
                             EMSI.enseignantSupprimerNote(*ens);
                         break;
                         case 4:
-                            EMSI.enseignantConsulterNotes(*ens);
+                            EMSI.enseignantModifierNote(*ens);
                         break;
                         case 5:
+                            EMSI.enseignantConsulterNotes(*ens);
+                        break;
+                        case 6:
+                            EMSI.enseignantCalculerMoyenneGroupe(*ens);
+                        break;
+                        case 7:
                             user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false;
                         break;
                         default:
                             cout << "\nChoix invalide\n";
                     }
-                } while (choix != 0 && choix != 5);
+                } while (choix != 0 && choix != 7);
             }
             else if(user->getPermissions() == "ADMIN") {
                 Administratif *adm = dynamic_cast<Administratif*>(user);
@@ -946,6 +1072,6 @@ int main()
     }
 
     EMSI.sauvegarder();
-    
+
     return 0;
 }
