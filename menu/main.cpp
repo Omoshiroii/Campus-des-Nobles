@@ -29,6 +29,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <limits>
 
 using namespace std;
 
@@ -182,6 +183,21 @@ public:
     }
 };
 
+class Parent : public Personne {
+private:
+    int idEnfant;
+public:
+    Parent(int id, string nom, string prenom, string login, string mdp, int idEnfant)
+    : Personne(id, nom, prenom, "", "", login, mdp), idEnfant(idEnfant) { }
+
+    string getPermissions() const override { return "PARENT"; }
+    int getIdEnfant() const { return idEnfant; }
+
+    string afficher() const override {
+        return to_string(id) + ";" + nom + ";" + prenom + ";" + login + ";" + motDePasse + ";" + to_string(idEnfant);
+    }
+};
+
 class Note {
 private:
     int idEtudiant;
@@ -265,12 +281,22 @@ private:
     vector<Etudiant> etudiants;
     vector<Enseignant> enseignants;
     vector<Administratif> admins;
+    vector<Parent> parents;
     vector<Note> notes;
     vector<Module> modules;
     vector<Groupe> groupes;
     vector<pair<int,int>> absences; // pair<idEtudiant, totalHours>
     vector<pair<int,int>> avertissements; // pair<idEtudiant, count>
 public:
+    vector<Module> getModules() const { return modules; }
+
+    string getNomModule(int idModule) const {
+        for(const auto &m : modules) {
+            if(m.getId() == idModule) return m.getNom();
+        }
+        return "Module inconnu";
+    }
+
     void charger() {
         ifstream file;
         string ligne;
@@ -414,6 +440,26 @@ public:
         file.close();
         }
 
+        file.open("parents.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
+            stringstream ss(ligne);
+            string token;
+            int id, idEnfant;
+            string nom, prenom, login, mdp;
+
+            getline(ss,token,';'); id = stoi(token);
+            getline(ss,nom,';');
+            getline(ss,prenom,';');
+            getline(ss,login,';');
+            getline(ss,mdp,';');
+            getline(ss,token,';'); idEnfant = stoi(token);
+
+            parents.emplace_back(id, nom, prenom, login, mdp, idEnfant);
+        }
+        file.close();
+        }
+
         // !! pour le test initial, il existe trois modules
         if(!modules.size()){
             ofstream fichier;
@@ -433,6 +479,15 @@ public:
             fichier.open("administratifs.txt");
             fichier << "201;Test;Admin;abcd;1234" << endl;
             admins.emplace_back(201, "Test", "Admin", "abcd", "1234");
+            fichier.close();
+        }
+
+        // Test parent (Nom d'utilisateur: parent1, Mot de passe: 5555, child ID: 1)
+        if(!parents.size()){
+            ofstream fichier;
+            fichier.open("parents.txt");
+            fichier << "301;Doe;Parent;parent1;5555;1" << endl;
+            parents.emplace_back(301, "Doe", "Parent", "parent1", "5555", 1);
             fichier.close();
         }
 
@@ -490,6 +545,10 @@ public:
         for(auto &a : admins) { file << a.afficher() << endl; }
         file.close();
 
+        file.open("parents.txt");
+        for(auto &p : parents) { file << p.afficher() << endl; }
+        file.close();
+
         file.open("notes.txt");
         if(file.is_open()){
         for(auto &n : notes) {
@@ -527,6 +586,10 @@ public:
         for(auto &a : admins)
             if(a.getLogin() == login && a.getMotDePasse() == mdp)
                 return &a;
+
+        for(auto &p : parents)
+            if(p.getLogin() == login && p.getMotDePasse() == mdp)
+                return &p;
 
         return nullptr;
     }
@@ -570,27 +633,50 @@ public:
         }
         notes.emplace_back(idEtudiant, idModule, valeur);
         cout << "\nNote ajoutee avec succes.\n";
+        mettreAJourMoyenneEtudiant(idEtudiant);
+    }
+
+    void mettreAJourMoyenneEtudiant(int idEtudiant) {
+        float somme = 0;
+        int count = 0;
+        for(const auto &n : notes) {
+            if(n.getIdEtudiant() == idEtudiant) {
+                somme += n.getValeur();
+                count++;
+            }
+        }
+        if(count > 0) {
+            float newMoyenne = somme / count;
+            for(auto &e : etudiants) {
+                if(e.getId() == idEtudiant) {
+                    e.setMoyenne(newMoyenne);
+                    break;
+                }
+            }
+        }
     }
 
     void supprimerNote(int idEtudiant, int idModule){
         bool existe = false;
+        bool noteExiste = false;
         for(auto &e : etudiants) { if(e.getId() == idEtudiant) { existe = true; break; } }
         if(!existe) {
             cout << "\nEtudiant introuvable.\n";
             return;
         }
-        for(auto e = etudiants.begin(); e != etudiants.end(); ++e) {
-            if (e->getId() == idEtudiant) {
-                for(auto a = notes.begin(); a != notes.end();) {
-                    if (a->getIdEtudiant() == e->getId() && a->getIdModule() == idModule) {
-                        a = notes.erase(a);
-                        cout << "\nNote supprimee.\n";
-                        break;
-                    } else {
-                        ++a;
-                    }
-                }
+        for(auto a = notes.begin(); a != notes.end();) {
+            if (a->getIdEtudiant() == idEtudiant && a->getIdModule() == idModule) {
+                a = notes.erase(a);
+                cout << "\nNote supprimee avec succes.\n";
+                mettreAJourMoyenneEtudiant(idEtudiant);
+                noteExiste = true;
+                break;
+            } else {
+                ++a;
             }
+        }
+        if(!noteExiste) {
+            cout << "\nAucune note trouvee pour cet etudiant dans ce module.\n";
         }
     }
 
@@ -611,6 +697,7 @@ public:
                         else {
                             n = note;
                             cout << "\nNote modifiee.\n";
+                            mettreAJourMoyenneEtudiant(idEtudiant);
                             return; // stop after modification
                         }
                     }
@@ -696,25 +783,40 @@ public:
     }
 
     void listerEtudiantsDansModule(int idModule) const {
-        cout << "\n--- Liste des etudiants (pas d'inscription par module dans la BD actuelle) ---\n";
-        for(const auto &stu : etudiants) {
-            cout << stu.getId() << " - " << stu.getNom() << " " << stu.getPrenom() << " (Groupe " << stu.getGroupe() << ")\n";
+        cout << "\n--- Etudiants ayant des notes dans le module: " << getNomModule(idModule) << " ---\n";
+        bool trouve = false;
+        for(const auto &n : notes) {
+            if(n.getIdModule() == idModule) {
+                for(const auto &stu : etudiants) {
+                    if(stu.getId() == n.getIdEtudiant()) {
+                        cout << stu.getId() << " - " << stu.getNom() << " " << stu.getPrenom() 
+                             << " (Groupe " << stu.getGroupe() << ") | Note: " << n.getValeur() << "\n";
+                        trouve = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if(!trouve) {
+            cout << "Aucun etudiant n'a encore de note dans ce module.\n";
+            cout << "\n--- Tous les etudiants (pour reference) ---\n";
+            for(const auto &stu : etudiants) {
+                cout << stu.getId() << " - " << stu.getNom() << " " << stu.getPrenom() 
+                     << " (Groupe " << stu.getGroupe() << ")\n";
+            }
         }
     }
 
     void enseignantAjouterOuModifierNote(Enseignant &e) {
-        int idEtu;
-        float note;
-        cout << "\nID Etudiant: ";
-        while(!(cin >> idEtu)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
-        cout << "Note: ";
-        cin >> note;
+        int idEtu = lireInt("\nID Etudiant: ");
+        float note = lireFloat("Note: ");
         // check if note exists
         for(auto &n : notes) {
             if(n.getIdEtudiant() == idEtu && n.getIdModule() == e.getModule()) {
                 if(note < 0 || note > 20) { cout << "\nNote invalide." << endl; return; }
                 n = note;
                 cout << "\nNote modifiee." << endl;
+                mettreAJourMoyenneEtudiant(idEtu);
                 return;
             }
         }
@@ -773,18 +875,24 @@ public:
     }
 
     void enseignantAjouterNote(Enseignant &e) {
-        int idEtu = lireInt("\nID Etudiant: ");
-        float note = lireFloat("Note: ");
+        string nomModule = getNomModule(e.getModule());
+        cout << "\n--- Ajout de note pour le module: " << nomModule << " ---\n";
+        int idEtu = lireInt("ID Etudiant: ");
+        float note = lireFloat("Note (0-20): ");
         ajouterNote(idEtu, e.getModule(), note);
     }
 
     void enseignantSupprimerNote(Enseignant &e) {
-        int idEtu = lireInt("\nID Etudiant: ");
+        string nomModule = getNomModule(e.getModule());
+        cout << "\n--- Suppression de note pour le module: " << nomModule << " ---\n";
+        int idEtu = lireInt("ID Etudiant: ");
         supprimerNote(idEtu, e.getModule());
     }
 
     void enseignantModifierNote(Enseignant &e) {
-        int idEtu = lireInt("\nID Etudiant: ");
+        string nomModule = getNomModule(e.getModule());
+        cout << "\n--- Modification de note pour le module: " << nomModule << " ---\n";
+        int idEtu = lireInt("ID Etudiant: ");
         modifierNote(idEtu, e.getModule());
     }
 
@@ -862,17 +970,13 @@ public:
 
     void adminAjouterModule(){
         int id = (!modules.size())?1:modules.back().getId()+1;
-        string modu;
-        cout << "\nNom de module: ";
-        cin >> modu;
-        modules.emplace_back(id,modu);
+        string modu = lireString("\nNom de module: ");
+        modules.emplace_back(id, modu);
         cout << "\nModule ajoute.\n";
     }
 
     void adminSupprimerModule(){
-        int id;
-        cout << "\nID de module a supprimer: ";
-        while(!(cin >> id)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
+        int id = lireInt("\nID de module a supprimer: ");
         for(auto it = modules.begin(); it != modules.end(); ++it) {
             if(it->getId() == id) {
                 for(auto e = enseignants.begin(); e != enseignants.end();) { if (e->getModule() == id) { e = enseignants.erase(e); } else { ++e; } }
@@ -965,9 +1069,7 @@ public:
     }
 
     void adminSupprimerEtudiant(){
-        int id;
-        cout << "\nID de l'etudiant a supprimer: ";
-        while(!(cin >> id)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
+        int id = lireInt("\nID de l'etudiant a supprimer: ");
 
         for(auto it = etudiants.begin(); it != etudiants.end(); ++it) {
             if(it->getId() == id) {
@@ -982,9 +1084,7 @@ public:
     }
 
     void adminSupprimerEnseignant(){
-        int id;
-        cout << "\nID de l'enseignant a supprimer: ";
-        cin >> id;
+        int id = lireInt("\nID de l'enseignant a supprimer: ");
 
         for(auto it = enseignants.begin(); it != enseignants.end(); ++it) {
             if(it->getId() == id) {
@@ -997,9 +1097,7 @@ public:
     }
 
     void adminModifierEtudiant(){
-        int id;
-        cout << "\nID de l'etudiant a modifier: ";
-        cin >> id;
+        int id = lireInt("\nID de l'etudiant a modifier: ");
 
         for(auto &e : etudiants) {
             if(e.getId() == id) {
@@ -1011,27 +1109,21 @@ public:
                     cout << "4. Modifier mot de passe\n";
                     cout << "5. Modifier groupe\n";
                     cout << "0. Retour\n" << endl;
-                    cin >> choix;
+                    choix = lireInt("Choix: ");
 
                     switch (choix) {
                         case 1: {
-                            string v;
-                            cout << "\nNouveau nom: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau nom: ");
                             e.setNom(v);
                             break;
                         }
                         case 2: {
-                            string v;
-                            cout << "\nNouveau prenom: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau prenom: ");
                             e.setPrenom(v);
                             break;
                         }
                         case 3: {
-                            string v;
-                            cout << "\nNouveau login: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau login: ");
                             bool deja = false;
                             for (const auto& ee : etudiants) { if (ee.getLogin() == v) { deja = true; break; } }
                             for (const auto& ens : enseignants) { if (ens.getLogin() == v) { deja = true; break; } }
@@ -1041,17 +1133,13 @@ public:
                             break;
                         }
                         case 4: {
-                            string v;
-                            cout << "\nNouveau mot de passe: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau mot de passe: ");
                             e.setMdp(v);
                             break;
                         }
                         case 5: {
-                            int gg;
+                            int gg = lireInt("\nNouveau groupe: ");
                             bool existe = false;
-                            cout << "\nNouveau groupe: ";
-                            cin >> gg;
                             for(auto &g : groupes) { if(g.getId() == gg){ existe = true; break; } }
                             if(!existe) { cout << "\nGroupe introuvable.\n"; return; }
                             for(auto &g : groupes) { if(g.getId() == e.getGroupe()){ g.decrementer(); break; } }
@@ -1070,9 +1158,7 @@ public:
     }
 
     void adminModifierEnseignant(){
-        int id;
-        cout << "\nID de l'enseignant a modifier: ";
-        cin >> id;
+        int id = lireInt("\nID de l'enseignant a modifier: ");
 
         for(auto &e : enseignants) {
             if(e.getId() == id) {
@@ -1083,27 +1169,21 @@ public:
                     cout << "3. Modifier login\n";
                     cout << "4. Modifier mot de passe\n";
                     cout << "0. Retour\n" << endl;
-                    cin >> choix;
+                    choix = lireInt("Choix: ");
 
                     switch (choix) {
                         case 1: {
-                            string v;
-                            cout << "\nNouveau nom: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau nom: ");
                             e.setNom(v);
                             break;
                         }
                         case 2: {
-                            string v;
-                            cout << "\nNouveau prenom: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau prenom: ");
                             e.setPrenom(v);
                             break;
                         }
                         case 3: {
-                            string v;
-                            cout << "\nNouveau login: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau login: ");
                             bool deja = false;
                             for (const auto& ee : etudiants) { if (ee.getLogin() == v) { deja = true; break; } }
                             for (const auto& ens : enseignants) { if (ens.getLogin() == v) { deja = true; break; } }
@@ -1113,9 +1193,7 @@ public:
                             break;
                         }
                         case 4: {
-                            string v;
-                            cout << "\nNouveau mot de passe: ";
-                            cin >> v;
+                            string v = lireString("\nNouveau mot de passe: ");
                             e.setMdp(v);
                             break;
                         }
@@ -1130,10 +1208,8 @@ public:
     }
 
     void adminExporterEtudiantsParGroupe() {
-        int groupe;
+        int groupe = lireInt("\nNumero du groupe: ");
         bool existe = false;
-        cout << "\nNumero du groupe: ";
-        cin >> groupe;
         for(auto &g : groupes) { if(g.getId() == groupe) { existe = true; break; } }
         if(!existe) { cout << "\nGroupe introuvable\n"; return; }
         exporterEtudiantsParGroupe(groupe);
@@ -1141,6 +1217,13 @@ public:
 
     void adminExporterEnseignants() {
         exporterEnseignants();
+    }
+
+    Etudiant* trouverEtudiant(int idEtudiant) {
+        for(auto &e : etudiants) {
+            if(e.getId() == idEtudiant) return &e;
+        }
+        return nullptr;
     }
 };
 
@@ -1179,7 +1262,7 @@ int main()
             mdp = lireString("Mot de passe: ");
 
             user = EMSI.authentifier(login, mdp);
-            while(!user || (role == 1 && user->getPermissions() != "ETUDIANT") || (role == 2 && user->getPermissions() != "ENSEIGNANT") || (role == 3 && user->getPermissions() != "ADMIN") || (role == 4 && user->getPermissions() != "ETUDIANT")) {
+            while(!user || (role == 1 && user->getPermissions() != "ETUDIANT") || (role == 2 && user->getPermissions() != "ENSEIGNANT") || (role == 3 && user->getPermissions() != "ADMIN") || (role == 4 && user->getPermissions() != "PARENT")) {
                 cout << "\nAuthentification echouee ou role incorrect\n" << endl;
                 cout << "Nom d'utilisateur: ";
                 if(!getline(cin, login) || login.size() == 0) getline(cin, login);
@@ -1222,28 +1305,43 @@ int main()
                         cout << "\n+------------------------------------------------+\n";
                         cout << "|                Menu Enseignant                |\n";
                         cout << "+------------------------------------------------+\n";
-                        cout << "| 1. Consulter mes modules                      |\n";
-                        cout << "| 2. Lister les etudiants d'un module           |\n";
-                        cout << "| 3. Ajouter ou modifier une note               |\n";
-                        cout << "| 4. Enregistrer une absence                    |\n";
-                        cout << "| 5. Enregistrer un avertissement               |\n";
-                        cout << "| 6. Consulter les absences                     |\n";
-                        cout << "| 7. Se deconnecter                             |\n";
+                        cout << "| 1. Consulter mon module                       |\n";
+                        cout << "| 2. Lister les etudiants de mon module         |\n";
+                        cout << "| 3. Ajouter une note                           |\n";
+                        cout << "| 4. Modifier une note                          |\n";
+                        cout << "| 5. Supprimer une note                         |\n";
+                        cout << "| 6. Calculer moyenne du groupe                 |\n";
+                        cout << "| 7. Enregistrer une absence                    |\n";
+                        cout << "| 8. Enregistrer un avertissement               |\n";
+                        cout << "| 9. Consulter les absences                     |\n";
+                        cout << "| 10. Se deconnecter                            |\n";
                         cout << "| 0. Quitter le programme                       |\n";
                         cout << "+------------------------------------------------+\n";
                         choix = lireInt("Choix: ");
                         switch(choix) {
                             case 0: programme = false; cout << "\n+ Programme se termine +" << endl; break;
-                            case 1: cout << "\nMes modules: " << ens->getModule() << "\n"; break;
-                            case 2: { int idmod = ens->getModule(); cout << "\nModule choisi (id) [par defaut votre module]: " << idmod << "\n"; EMSI.listerEtudiantsDansModule(idmod); break; }
-                            case 3: EMSI.enseignantAjouterOuModifierNote(*ens); break;
-                            case 4: { int idEtu, hours; cout << "\nID Etudiant: "; cin >> idEtu; cout << "Heures: "; cin >> hours; EMSI.enregistrerAbsence(idEtu, hours); break; }
-                            case 5: { int idEtu; cout << "\nID Etudiant pour avertissement: "; cin >> idEtu; EMSI.enregistrerAvertissement(idEtu); break; }
-                            case 6: EMSI.afficherAbsencesPourEnseignant(*ens); break;
-                            case 7: user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false; break;
+                            case 1: {
+                                cout << "\n--- Mon module ---\n";
+                                for(const auto &m : EMSI.getModules()) {
+                                    if(m.getId() == ens->getModule()) {
+                                        cout << "ID: " << m.getId() << " | Nom: " << m.getNom() << "\n";
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                            case 2: EMSI.listerEtudiantsDansModule(ens->getModule()); break;
+                            case 3: EMSI.enseignantAjouterNote(*ens); break;
+                            case 4: EMSI.enseignantModifierNote(*ens); break;
+                            case 5: EMSI.enseignantSupprimerNote(*ens); break;
+                            case 6: EMSI.enseignantCalculerMoyenneGroupe(*ens); break;
+                            case 7: { int idEtu = lireInt("\nID Etudiant: "), hours = lireInt("Heures: "); EMSI.enregistrerAbsence(idEtu, hours); break; }
+                            case 8: { int idEtu = lireInt("\nID Etudiant pour avertissement: "); EMSI.enregistrerAvertissement(idEtu); break; }
+                            case 9: EMSI.afficherAbsencesPourEnseignant(*ens); break;
+                            case 10: user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false; break;
                             default: cout << "\nChoix invalide\n"; break;
                         }
-                    } while (choix != 0 && choix != 7);
+                    } while (choix != 0 && choix != 10);
             }
             else if(user->getPermissions() == "ADMIN") {
                 Administratif *adm = dynamic_cast<Administratif*>(user);
@@ -1268,7 +1366,6 @@ int main()
                     cout << "| 15. Se deconnecter                             |\n";
                     cout << "| 0.  Quitter le programme                       |\n";
                     cout << "+------------------------------------------------+\n";
-                    choix = lireInt("Choix: ");
                     choix = lireInt("Choix: ");
                     switch(choix) {
                         case 0:
@@ -1323,6 +1420,53 @@ int main()
                             cout << "\nChoix invalide\n";
                     }
                 } while (choix != 0 && choix != 15);
+            }
+            else if(user->getPermissions() == "PARENT") {
+                Parent *parent = dynamic_cast<Parent*>(user);
+                do {
+                    cout << "\n+------------------------------------------------+\n";
+                    cout << "|                  Menu Parent                   |\n";
+                    cout << "+------------------------------------------------+\n";
+                    cout << "| 1. Consulter les notes de mon enfant         |\n";
+                    cout << "| 2. Consulter les absences de mon enfant      |\n";
+                    cout << "| 3. Consulter les informations de mon enfant  |\n";
+                    cout << "| 4. Se deconnecter                             |\n";
+                    cout << "| 0. Quitter le programme                       |\n";
+                    cout << "+------------------------------------------------+\n";
+                    choix = lireInt("Choix: ");
+                    
+                    // Find the child
+                    Etudiant* enfant = EMSI.trouverEtudiant(parent->getIdEnfant());
+                    
+                    if(!enfant && choix != 0 && choix != 4) {
+                        cout << "\nErreur: Enfant introuvable dans le systeme.\n";
+                        continue;
+                    }
+                    
+                    switch(choix) {
+                        case 0: 
+                            programme = false; 
+                            cout << "\n+ Programme se termine +" << endl; 
+                            break;
+                        case 1: 
+                            if(enfant) EMSI.consulterNotesEtudiant(*enfant); 
+                            break;
+                        case 2: 
+                            if(enfant) EMSI.consulterAbsencesEtudiant(*enfant); 
+                            break;
+                        case 3: 
+                            if(enfant) EMSI.consulterDonnees(*enfant); 
+                            break;
+                        case 4: 
+                            user = nullptr; 
+                            cout << "\nUtilisateur se deconnecte.\n" << endl; 
+                            connecte = false; 
+                            break;
+                        default: 
+                            cout << "\nChoix invalide\n"; 
+                            break;
+                    }
+                } while (choix != 0 && choix != 4);
             }
         }
     }
