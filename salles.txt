@@ -1,0 +1,2 @@
+1;30;Salle SC61
+2;25;Salle SC62

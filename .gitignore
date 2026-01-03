@@ -1,0 +1,9 @@
+# Ignore compiled files
+*.exe
+*.o
+
+# Ignore VS Code settings
+.vscode/
+
+# Optional (Windows noise)
+*.log
