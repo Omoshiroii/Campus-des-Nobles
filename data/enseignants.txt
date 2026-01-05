@@ -1,2 +1,0 @@
-101;Prof;Alpha;1;prof1;3333
-102;Prof;Beta;2;prof2;4444
