@@ -297,46 +297,43 @@ public:
         ifstream fichier;
         string ligne;
 
-        file.open("groupes.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("groupes.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int id, effectif;
-
             getline(ss,token,';'); id = stoi(token);
             getline(ss,token,';'); effectif = stoi(token);
 
             groupes.emplace_back(id, effectif);
         }
-        file.close();
+        fichier.close();
         }
 
-        file.open("modules.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("modules.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int id;
             string nom;
-
             getline(ss,token,';'); id = stoi(token);
             getline(ss,nom,';');
 
             modules.emplace_back(id, nom);
         }
-        file.close();
+        fichier.close();
         }
 
-        file.open("etudiants.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("etudiants.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int id, groupe, nbAbsences, nbAvertissements;
             string nom, prenom, numTel, dateNaissance, login, mdp;
             float moyenne;
-
             getline(ss,token,';'); id = stoi(token);
             getline(ss,nom,';');
             getline(ss,prenom,';');
@@ -351,17 +348,16 @@ public:
 
             etudiants.emplace_back(id, nom, prenom, numTel, dateNaissance, login, mdp, groupe, moyenne, nbAbsences, nbAvertissements);
         }
-        file.close();
+        fichier.close();
         }
 
-        file.open("enseignants.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("enseignants.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int id,idmod;
             string nom, prenom, login, mdp;
-
             getline(ss,token,';'); id = stoi(token);
             getline(ss,nom,';');
             getline(ss,prenom,';');
@@ -371,17 +367,16 @@ public:
 
             enseignants.emplace_back(id, nom, prenom, idmod, login, mdp);
         }
-        file.close();
+        fichier.close();
         }
 
-        file.open("administratifs.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("administratifs.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int id;
             string nom, prenom, login, mdp;
-
             getline(ss,token,';'); id = stoi(token);
             getline(ss,nom,';');
             getline(ss,prenom,';');
@@ -390,29 +385,28 @@ public:
 
             admins.emplace_back(id, nom, prenom, login, mdp);
         }
-        file.close();
+        fichier.close();
         }
 
-        file.open("notes.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("notes.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int idEtu, idMod;
             float note;
-
             getline(ss,token,';'); idEtu = stoi(token);
             getline(ss,token,';'); idMod = stoi(token);
             getline(ss,token,';'); note = stof(token);
 
             notes.emplace_back(idEtu, idMod, note);
         }
-        file.close();
+        fichier.close();
         }
 
-        file.open("absences.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("absences.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int idEtu, hours;
@@ -420,12 +414,12 @@ public:
             getline(ss,token,';'); hours = stoi(token);
             absences.emplace_back(idEtu, hours);
         }
-        file.close();
+        fichier.close();
         }
 
-        file.open("avertissements.txt");
-        if(file.is_open()) {
-        while (getline(file, ligne)) {
+        fichier.open("avertissements.txt");
+        if(fichier.is_open()) {
+        while (getline(fichier, ligne)) {
             stringstream ss(ligne);
             string token;
             int idEtu, count;
@@ -433,7 +427,7 @@ public:
             getline(ss,token,';'); count = stoi(token);
             avertissements.emplace_back(idEtu, count);
         }
-        file.close();
+        fichier.close();
         }
 
         // !! pour le test initial, il existe trois modules
@@ -617,31 +611,6 @@ public:
         return true;
     }
 
-    void modifierNote(int idEtudiant, int idModule){
-        bool existe = false;
-        for(auto &e : etudiants) { if(e.getId() == idEtudiant) { existe = true; break; } }
-        if(!existe) {
-            cout << "\nEtudiant introuvable.\n";
-            return;
-        }
-        for(auto e = etudiants.begin(); e != etudiants.end(); ++e) {
-            if (e->getId() == idEtudiant) {
-                for(auto &n : notes) {
-                    if (n.getIdEtudiant() == idEtudiant && n.getIdModule() == idModule) {
-                        float note = lireFloat("Donnez la nouvelle note: ");
-                        if(note > 20 || note < 0)
-                            cout << "\nEchec de modification de note.\n";
-                        else {
-                            n = note;
-                            cout << "\nNote modifiee.\n";
-                            return; // stop after modification
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     void exporterNotesEtudiant(int idEtudiant) {
         string nomfichier = "notes_" + to_string(idEtudiant) + ".csv";
         ofstream fichier(nomfichier);
@@ -753,10 +722,7 @@ public:
             journaliser("Modification de note",e.getNom() + " " + e.getPrenom());
     }
 
-    void enseignantModifierNote(Enseignant &e) {
-        int idEtu = lireInt("\nID Etudiant: ");
-        modifierNote(idEtu, e.getModule());
-    }
+    
 
     void enseignantConsulterNotes(Enseignant &e) const {
         cout << "\n--- Liste des notes ---\n";
@@ -797,31 +763,7 @@ public:
         journaliser("Calcul de moyenne de groupe",ens.getNom() + " " + ens.getPrenom());
     }
 
-    void enseignantCalculerMoyenneGroupe(Enseignant &ens) const {
-        bool existe = false;
-        bool existe2 = false;
-        float moyenne = 0;
-        int etudtrouve = 0;
-        int id = lireInt("\nID du groupe: ");
-        for(auto &g : groupes) { if(g.getId() == id) { existe = true; break; } }
-        for(auto &n : notes) {
-            for(auto &e : etudiants) {
-                if(n.getIdEtudiant() == e.getId() && e.getGroupe() == id && n.getIdModule() == ens.getModule()){
-                    moyenne += n.getValeur();
-                    existe2 = true;
-                    etudtrouve++;
-                }
-            }
-        }
-        if(!existe)
-            cout << "\nGroupe introuvable.\n";
-        else if(!existe2)
-            cout << "\nAucune note a calculer.\n";
-        else {
-            moyenne /= etudtrouve;
-            cout << "\nMoyenne de groupe " << id << " est " << moyenne << "." << endl;
-        }
-    }
+    
 
     void consulterDonnees(const Etudiant &p) const {
         cout << "\n--- Mes informations ---\n";
@@ -835,6 +777,46 @@ public:
         for(const auto &av : avertissements) if(av.first == p.getId()) warn += av.second;
         cout << "Absences (heures): " << total << "\n";
         cout << "Avertissements: " << warn << "\n";
+    }
+
+    void consulterNotesEtudiant(const Etudiant &e) const {
+        cout << "\n--- Mes notes ---\n";
+        float somme = 0; int count = 0;
+        for(const auto &m : modules) {
+            bool found = false;
+            for(const auto &n : notes) {
+                if(n.getIdEtudiant() == e.getId() && n.getIdModule() == m.getId()){
+                    cout << m.getNom() << " : " << n.getValeur() << "\n";
+                    somme += n.getValeur();
+                    count++;
+                    found = true;
+                    break;
+                }
+            }
+            if(!found) cout << m.getNom() << " : -\n";
+        }
+        if(count > 0) cout << "Moyenne: " << (somme / count) << "\n";
+        else cout << "Aucune note disponible.\n";
+    }
+
+    void consulterAbsencesEtudiant(const Etudiant &e) const {
+        int total = 0;
+        for(const auto &a : absences) if(a.first == e.getId()) total += a.second;
+        cout << "\n--- Mes absences ---\n";
+        cout << "Total heures d'absence: " << total << "\n";
+        const int seuil = 20;
+        if(total > seuil) cout << "Attention: depassement du seuil d'absences (" << seuil << "h).\n";
+    }
+
+    void consulterModulesPourEtudiant(const Etudiant &e) const {
+        cout << "\n--- Modules disponibles ---\n";
+        for(const auto &m : modules) {
+            cout << m.getId() << ". " << m.getNom();
+            for(const auto &ens : enseignants) {
+                if(ens.getModule() == m.getId()) { cout << " | Prof: " << ens.getNom() << " " << ens.getPrenom(); break; }
+            }
+            cout << "\n";
+        }
     }
 
     void consulterDonnees(Enseignant &ens) const {
@@ -924,21 +906,6 @@ public:
         cout << "\nGroupe introuvable.\n";
     }
 
-    void adminAjouterEtudiant(){
-        int groupe;
-        string nom, prenom, login, mdp;
-        string numTel, dateNaissance;
-        bool deja = false;
-        bool existe = false;
-
-        cout << "\nNom: "; nom = lireString("");
-        cout << "Prenom: "; prenom = lireString("");
-        cout << "Numero de telephone (optionnel): "; numTel = lireString("");
-        cout << "Date de naissance (YYYY-MM-DD) (optionnel): "; dateNaissance = lireString("");
-        cout << "Login: "; login = lireString("");
-        cout << "Mot de passe: "; mdp = lireString("");
-        groupe = lireInt("Groupe: ");
-
     int importerEtudiants(string f){
         string ligne;
         ifstream fichier;
@@ -963,7 +930,7 @@ public:
             getline(ss,login,';');
             getline(ss,mdp,';');
             getline(ss,token,';'); groupe = stoi(token);
-            etudiants.emplace_back(id, nom, prenom, login, mdp, groupe);
+            etudiants.emplace_back(id, nom, prenom, "", "", login, mdp, groupe, 0.0f, 0, 0);
             n++;
         }
         fichier.close();
@@ -1003,7 +970,7 @@ public:
             if(deja)
                 cout << "\nLogin existe deja.\n";
             else {
-                etudiants.emplace_back(!etudiants.size()?1:etudiants.back().getId()+1, nom, prenom, login, mdp, groupe);
+                etudiants.emplace_back(!etudiants.size()?1:etudiants.back().getId()+1, nom, prenom, "", "", login, mdp, groupe, 0.0f, 0, 0);
                 cout << "\nEtudiant ajoute avec succes.\n";
                 journaliser("Ajout d'étudiant",adm.getNom() + " " + adm.getPrenom());
                 for(auto &g : groupes) { if(g.getId() == groupe){ g.incrementer(); break; } }
