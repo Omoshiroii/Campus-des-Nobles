@@ -1,8 +1,26 @@
-// Campus des nobles - Beta - Projet C++ Programmation Orientée Objet
-// Taha Zerrad, Salsabil Benhnich, Oussama El Attabi, Rania Mahfoud, Badr Al Fezghari
+ // Campus des nobles - Alpha - Projet C++ Programmation Orientée Objet
+// Taha Zerrad, Salsabile Benhnich, Oussama El Attabi, Rania Mahfoud, Badr Al Fezghari
+// Bases de donnéees représentées par des fichiers .txt
 
 // !! pour le test initial, on peut se connecter avec l'admin (Nom d'utilisateur: abcd, Mot de passe: 1234)
-// !! pour le test initial, on peut quitter le programme dans le login en entrant (Nom d'utilisateur: 0)
+// !! pour le test initial, on peut quitter le programme dans le login en entrant (Nom d'utilisateur: 0) 
+// NOUVEAUX UPDATES:
+    // 1. Surcharge de l'opérateur + pour la classe Note:
+        // On peut ajouter une valeur à la valeur d'une note (Note + float)
+        // On peut ajouter la valeur d'une note à la valeur une autre (Note + Note)
+    // 2. Surcharge de l'opérateur = pour la classe Note:
+        // On peut affecter une valeur à la valeur d'une note (Note = float)
+        // On peut affecter la valeur d'une note à la valeur une autre (Note = Note)
+    // 3. Empechement d'ajouter une note à un étudiant qui a déja une note.
+        // Si l'étudiant a déjà une note dans ce module, on affiche "Essayez de modifier"
+    // 4. Modification d'une note.
+        // Enseignant peut modifier la note d'un étudiant dans le module
+    // 5. Surcharge de l'opérateur << pour la classe Note:
+        // Pour afficher un objet de classe Note, on affiche sa valeur
+    // 6. Calcul de moyenne par groupe.
+        // Selon son module, l'enseignant peut calculer la moyenne des notes d'un groupe.
+
+/* Références: 1) 132, 2) 140, 3) 410, 4) 530, 5) 153, 6) 546. */
 
 // NOUVEAUX UPDATES:
     // 1. Solution pour boucle après cin >>
@@ -17,33 +35,92 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include <limits>
 #include <chrono>
 #include <ctime>
 
 using namespace std;
 
+// Helper simple: lecture d'entier depuis la console avec validation
+// (utilise getline + stoi pour eviter les desordres de cin)
+int lireInt(const string &invite) {
+    while (true) {
+        cout << invite;
+        string ligne;
+        if(!std::getline(cin, ligne)) {
+            // EOF or error
+            exit(0);
+        }
+        try {
+            size_t pos;
+            int val = stoi(ligne, &pos);
+            if (pos != ligne.size()) throw invalid_argument("extra");
+            return val;
+        } catch (...) {
+            cout << "Entree invalide. Reessayez." << endl;
+        }
+    }
+}
+
+// Lit une ligne non vide depuis l'entree standard (prompt affiché)
+string lireString(const string &invite) {
+    string s;
+    while (true) {
+        cout << invite;
+        if(!std::getline(cin, s)) exit(0);
+        if(s.size() == 0) {
+            cout << "Entree vide. Reessayez." << endl;
+            continue;
+        }
+        return s;
+    }
+}
+
+// Lit un flottant avec validation
+float lireFloat(const string &invite) {
+    while (true) {
+        cout << invite;
+        string ligne;
+        if(!std::getline(cin, ligne)) exit(0);
+        try {
+            size_t pos;
+            float val = stof(ligne, &pos);
+            if (pos != ligne.size()) throw invalid_argument("extra");
+            return val;
+        } catch (...) {
+            cout << "Entree invalide. Reessayez." << endl;
+        }
+    }
+}
+
 class Personne {
 protected:
     int id;
     string nom;
     string prenom;
+    string numTel;
+    string dateNaissance;
     string login;
     string motDePasse;
 public:
-    Personne(int id, string nom, string prenom, string login, string mdp)
-    : id(id), nom(nom), prenom(prenom), login(login), motDePasse(mdp) { }
+    Personne(int id, string nom, string prenom, string numTel, string dateNaissance, string login, string mdp)
+    : id(id), nom(nom), prenom(prenom), numTel(numTel), dateNaissance(dateNaissance), login(login), motDePasse(mdp) { }
     virtual ~Personne() { }
 
     virtual string getPermissions() const = 0;
     int getId() const { return id; }
     string getNom() const { return nom; }
     string getPrenom() const { return prenom; }
+    string getNumTel() const { return numTel; }
+    string getDateNaissance() const { return dateNaissance; }
     string getLogin() const { return login; }
     string getMotDePasse() const { return motDePasse; }
 
     void setNom(const string &n) { nom = n; }
     void setPrenom(const string &p) { prenom = p; }
+    void setNumTel(const string &nt) { numTel = nt; }
+    void setDateNaissance(const string &dn) { dateNaissance = dn; }
     void setLogin(const string &l) { login = l; }
     void setMdp(const string &m) { motDePasse = m; }
 
@@ -53,17 +130,26 @@ public:
 class Etudiant : public Personne {
 private:
     int groupe;
+    float moyenne;
+    int nbAbsences;
+    int nbAvertissements;
 public:
-    Etudiant(int id, string nom, string prenom, string login, string mdp, int groupe)
-    : Personne(id, nom, prenom, login, mdp), groupe(groupe) { }
+    Etudiant(int id, string nom, string prenom, string numTel, string dateNaissance, string login, string mdp, int groupe, float moyenne, int nbAbsences, int nbAvertissements)
+    : Personne(id, nom, prenom, numTel, dateNaissance, login, mdp), groupe(groupe), moyenne(moyenne), nbAbsences(nbAbsences), nbAvertissements(nbAvertissements) { }
 
     string getPermissions() const override { return "ETUDIANT"; }
     int getGroupe() const { return groupe; }
+    float getMoyenne() const { return moyenne; }
+    int getNbAbsences() const { return nbAbsences; }
+    int getNbAvertissements() const { return nbAvertissements; }
 
     void setGroupe(int g) { groupe = g; }
+    void setMoyenne(float m) { moyenne = m; }
+    void setNbAbsences(int a) { nbAbsences = a; }
+    void setNbAvertissements(int av) { nbAvertissements = av; }
 
     string afficher() const override {
-        return to_string(id) + ";" + nom + ";" + prenom + ";" + login + ";" + motDePasse + ";" + to_string(groupe);
+        return to_string(id) + ";" + nom + ";" + prenom + ";" + numTel + ";" + dateNaissance + ";" + login + ";" + motDePasse + ";" + to_string(groupe) + ";" + to_string(moyenne) + ";" + to_string(nbAbsences) + ";" + to_string(nbAvertissements);
     }
 };
 
@@ -72,7 +158,7 @@ protected:
     string poste;
 public:
     Employe(int id, string nom, string prenom, string login, string mdp, string poste)
-    : Personne(id, nom, prenom, login, mdp), poste(poste) { }
+    : Personne(id, nom, prenom, "", "", login, mdp), poste(poste) { }
 };
 
 class Enseignant : public Employe {
@@ -84,6 +170,8 @@ public:
 
     string getPermissions() const override { return "ENSEIGNANT"; }
     int getModule() { return module; }
+
+    int getModule() const { return module; }
 
     void setModule(int m) { module =  m; }
 
@@ -202,13 +290,16 @@ private:
     vector<Note> notes;
     vector<Module> modules;
     vector<Groupe> groupes;
+    vector<pair<int,int>> absences; // pair<idEtudiant, totalHours>
+    vector<pair<int,int>> avertissements; // pair<idEtudiant, count>
 public:
     void charger() {
         ifstream fichier;
         string ligne;
 
-        fichier.open("groupes.txt");
-        while (getline(fichier, ligne)) {
+        file.open("groupes.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
             stringstream ss(ligne);
             string token;
             int id, effectif;
@@ -218,10 +309,12 @@ public:
 
             groupes.emplace_back(id, effectif);
         }
-        fichier.close();
+        file.close();
+        }
 
-        fichier.open("modules.txt");
-        while (getline(fichier, ligne)) {
+        file.open("modules.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
             stringstream ss(ligne);
             string token;
             int id;
@@ -232,28 +325,38 @@ public:
 
             modules.emplace_back(id, nom);
         }
-        fichier.close();
+        file.close();
+        }
 
-        fichier.open("etudiants.txt");
-        while (getline(fichier, ligne)) {
+        file.open("etudiants.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
             stringstream ss(ligne);
             string token;
-            int id, groupe;
-            string nom, prenom, login, mdp;
+            int id, groupe, nbAbsences, nbAvertissements;
+            string nom, prenom, numTel, dateNaissance, login, mdp;
+            float moyenne;
 
             getline(ss,token,';'); id = stoi(token);
             getline(ss,nom,';');
             getline(ss,prenom,';');
+            getline(ss,numTel,';');
+            getline(ss,dateNaissance,';');
             getline(ss,login,';');
             getline(ss,mdp,';');
             getline(ss,token,';'); groupe = stoi(token);
+            getline(ss,token,';'); moyenne = stof(token);
+            getline(ss,token,';'); nbAbsences = stoi(token);
+            getline(ss,token,';'); nbAvertissements = stoi(token);
 
-            etudiants.emplace_back(id, nom, prenom, login, mdp, groupe);
+            etudiants.emplace_back(id, nom, prenom, numTel, dateNaissance, login, mdp, groupe, moyenne, nbAbsences, nbAvertissements);
         }
-        fichier.close();
+        file.close();
+        }
 
-        fichier.open("enseignants.txt");
-        while (getline(fichier, ligne)) {
+        file.open("enseignants.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
             stringstream ss(ligne);
             string token;
             int id,idmod;
@@ -268,10 +371,12 @@ public:
 
             enseignants.emplace_back(id, nom, prenom, idmod, login, mdp);
         }
-        fichier.close();
+        file.close();
+        }
 
-        fichier.open("administratifs.txt");
-        while (getline(fichier, ligne)) {
+        file.open("administratifs.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
             stringstream ss(ligne);
             string token;
             int id;
@@ -285,10 +390,12 @@ public:
 
             admins.emplace_back(id, nom, prenom, login, mdp);
         }
-        fichier.close();
+        file.close();
+        }
 
-        fichier.open("notes.txt");
-        while (getline(fichier, ligne)) {
+        file.open("notes.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
             stringstream ss(ligne);
             string token;
             int idEtu, idMod;
@@ -300,7 +407,34 @@ public:
 
             notes.emplace_back(idEtu, idMod, note);
         }
-        fichier.close();
+        file.close();
+        }
+
+        file.open("absences.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
+            stringstream ss(ligne);
+            string token;
+            int idEtu, hours;
+            getline(ss,token,';'); idEtu = stoi(token);
+            getline(ss,token,';'); hours = stoi(token);
+            absences.emplace_back(idEtu, hours);
+        }
+        file.close();
+        }
+
+        file.open("avertissements.txt");
+        if(file.is_open()) {
+        while (getline(file, ligne)) {
+            stringstream ss(ligne);
+            string token;
+            int idEtu, count;
+            getline(ss,token,';'); idEtu = stoi(token);
+            getline(ss,token,';'); count = stoi(token);
+            avertissements.emplace_back(idEtu, count);
+        }
+        file.close();
+        }
 
         // !! pour le test initial, il existe trois modules
         if(!modules.size()){
@@ -321,6 +455,36 @@ public:
             fichier.open("administratifs.txt");
             fichier << "201;Test;Admin;abcd;1234" << endl;
             admins.emplace_back(201, "Test", "Admin", "abcd", "1234");
+            fichier.close();
+        }
+
+        // Defaults for testing: ensure at least one group, some students and teachers
+        if(!groupes.size()){
+            ofstream fichier;
+            fichier.open("groupes.txt");
+            fichier << "1;2" << endl;
+            groupes.emplace_back(1,2);
+            fichier.close();
+        }
+
+        if(!etudiants.size()){
+            ofstream fichier;
+            fichier.open("etudiants.txt");
+            // Format: id;nom;prenom;numTel;dateNaissance;login;mdp;groupe;moyenne;nbAbsences;nbAvertissements
+            fichier << "1;Doe;John;0000;2000-01-01;stu1;1111;1;0;0;0" << endl;
+            fichier << "2;Smith;Alice;0000;2000-01-02;stu2;2222;1;0;0;0" << endl;
+            etudiants.emplace_back(1, "Doe", "John", "0000", "2000-01-01", "stu1", "1111", 1, 0.0f, 0, 0);
+            etudiants.emplace_back(2, "Smith", "Alice", "0000", "2000-01-02", "stu2", "2222", 1, 0.0f, 0, 0);
+            fichier.close();
+        }
+
+        if(!enseignants.size()){
+            ofstream fichier;
+            fichier.open("enseignants.txt");
+            fichier << "101;Prof;Alpha;1;prof1;3333" << endl;
+            fichier << "102;Prof;Beta;2;prof2;4444" << endl;
+            enseignants.emplace_back(101, "Prof", "Alpha", 1, "prof1", "3333");
+            enseignants.emplace_back(102, "Prof", "Beta", 2, "prof2", "4444");
             fichier.close();
         }
     }
@@ -453,6 +617,31 @@ public:
         return true;
     }
 
+    void modifierNote(int idEtudiant, int idModule){
+        bool existe = false;
+        for(auto &e : etudiants) { if(e.getId() == idEtudiant) { existe = true; break; } }
+        if(!existe) {
+            cout << "\nEtudiant introuvable.\n";
+            return;
+        }
+        for(auto e = etudiants.begin(); e != etudiants.end(); ++e) {
+            if (e->getId() == idEtudiant) {
+                for(auto &n : notes) {
+                    if (n.getIdEtudiant() == idEtudiant && n.getIdModule() == idModule) {
+                        float note = lireFloat("Donnez la nouvelle note: ");
+                        if(note > 20 || note < 0)
+                            cout << "\nEchec de modification de note.\n";
+                        else {
+                            n = note;
+                            cout << "\nNote modifiee.\n";
+                            return; // stop after modification
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void exporterNotesEtudiant(int idEtudiant) {
         string nomfichier = "notes_" + to_string(idEtudiant) + ".csv";
         ofstream fichier(nomfichier);
@@ -496,7 +685,48 @@ public:
         journaliser("Exportation des notes",e.getNom() + " " + e.getPrenom());
     }
 
-    void enseignantAjouterNote(Enseignant &e) {
+    // Enregistre des heures d'absence pour un etudiant (ajoute si deja present)
+    void enregistrerAbsence(int idEtudiant, int hours) {
+        bool existe = false;
+        for(const auto &e : etudiants) if(e.getId() == idEtudiant) { existe = true; break; }
+        if(!existe) { cout << "\nEtudiant introuvable." << endl; return; }
+        for(auto &a : absences) {
+            if(a.first == idEtudiant) { a.second += hours; cout << "\nAbsence enregistree." << endl; return; }
+        }
+        absences.emplace_back(idEtudiant, hours);
+        cout << "\nAbsence enregistree." << endl;
+    }
+
+    // Enregistre un avertissement pour un etudiant (compte incrementé)
+    void enregistrerAvertissement(int idEtudiant) {
+        bool existe = false;
+        for(const auto &e : etudiants) if(e.getId() == idEtudiant) { existe = true; break; }
+        if(!existe) { cout << "\nEtudiant introuvable." << endl; return; }
+        for(auto &a : avertissements) {
+            if(a.first == idEtudiant) { a.second += 1; cout << "\nAvertissement enregistre." << endl; return; }
+        }
+        avertissements.emplace_back(idEtudiant, 1);
+        cout << "\nAvertissement enregistre." << endl;
+    }
+
+    // Affiche le total d'heures d'absence pour chaque etudiant (pour l'enseignant)
+    void afficherAbsencesPourEnseignant(Enseignant &e) const {
+        cout << "\n--- Absences (tous les etudiants) ---\n";
+        for(const auto &stu : etudiants) {
+            int total = 0;
+            for(const auto &a : absences) if(a.first == stu.getId()) total += a.second;
+            cout << "Etudiant " << stu.getId() << " - " << stu.getNom() << " " << stu.getPrenom() << " : " << total << "h\n";
+        }
+    }
+
+    void listerEtudiantsDansModule(int idModule) const {
+        cout << "\n--- Liste des etudiants (pas d'inscription par module dans la BD actuelle) ---\n";
+        for(const auto &stu : etudiants) {
+            cout << stu.getId() << " - " << stu.getNom() << " " << stu.getPrenom() << " (Groupe " << stu.getGroupe() << ")\n";
+        }
+    }
+
+    void enseignantAjouterOuModifierNote(Enseignant &e) {
         int idEtu;
         float note;
         cout << "\nID Etudiant: ";
@@ -521,6 +751,11 @@ public:
         while(!(cin >> idEtu)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
         if(modifierNote(idEtu, e.getModule()))
             journaliser("Modification de note",e.getNom() + " " + e.getPrenom());
+    }
+
+    void enseignantModifierNote(Enseignant &e) {
+        int idEtu = lireInt("\nID Etudiant: ");
+        modifierNote(idEtu, e.getModule());
     }
 
     void enseignantConsulterNotes(Enseignant &e) const {
@@ -562,13 +797,44 @@ public:
         journaliser("Calcul de moyenne de groupe",ens.getNom() + " " + ens.getPrenom());
     }
 
-    void consulterDonnees(const Etudiant &e) const {
+    void enseignantCalculerMoyenneGroupe(Enseignant &ens) const {
+        bool existe = false;
+        bool existe2 = false;
+        float moyenne = 0;
+        int etudtrouve = 0;
+        int id = lireInt("\nID du groupe: ");
+        for(auto &g : groupes) { if(g.getId() == id) { existe = true; break; } }
+        for(auto &n : notes) {
+            for(auto &e : etudiants) {
+                if(n.getIdEtudiant() == e.getId() && e.getGroupe() == id && n.getIdModule() == ens.getModule()){
+                    moyenne += n.getValeur();
+                    existe2 = true;
+                    etudtrouve++;
+                }
+            }
+        }
+        if(!existe)
+            cout << "\nGroupe introuvable.\n";
+        else if(!existe2)
+            cout << "\nAucune note a calculer.\n";
+        else {
+            moyenne /= etudtrouve;
+            cout << "\nMoyenne de groupe " << id << " est " << moyenne << "." << endl;
+        }
+    }
+
+    void consulterDonnees(const Etudiant &p) const {
         cout << "\n--- Mes informations ---\n";
-        cout << "ID: " << e.getId() << "\n";
-        cout << "Nom: " << e.getNom() << "\n";
-        cout << "Prenom: " << e.getPrenom() << "\n";
-        cout << "Groupe: " << e.getGroupe() << "\n";
-        journaliser("Consultation des données",e.getNom() + " " + e.getPrenom());
+        cout << "ID: " << p.getId() << "\n";
+        cout << "Nom: " << p.getNom() << "\n";
+        cout << "Prenom: " << p.getPrenom() << "\n";
+        cout << "Groupe: " << p.getGroupe() << "\n";
+        int total = 0;
+        for(const auto &a : absences) if(a.first == p.getId()) total += a.second;
+        int warn = 0;
+        for(const auto &av : avertissements) if(av.first == p.getId()) warn += av.second;
+        cout << "Absences (heures): " << total << "\n";
+        cout << "Avertissements: " << warn << "\n";
     }
 
     void consulterDonnees(Enseignant &ens) const {
@@ -636,8 +902,7 @@ public:
 
     void adminSupprimerGroupe(const Administratif &ad){
         int id;
-        cout << "\nID de groupe a supprimer: ";
-        while(!(cin >> id)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
+        id = lireInt("\nID de groupe a supprimer: ");
         for(auto it = groupes.begin(); it != groupes.end(); ++it) {
             if(it->getId() == id) {
                 int confirm = 0; 
@@ -658,6 +923,21 @@ public:
         }
         cout << "\nGroupe introuvable.\n";
     }
+
+    void adminAjouterEtudiant(){
+        int groupe;
+        string nom, prenom, login, mdp;
+        string numTel, dateNaissance;
+        bool deja = false;
+        bool existe = false;
+
+        cout << "\nNom: "; nom = lireString("");
+        cout << "Prenom: "; prenom = lireString("");
+        cout << "Numero de telephone (optionnel): "; numTel = lireString("");
+        cout << "Date de naissance (YYYY-MM-DD) (optionnel): "; dateNaissance = lireString("");
+        cout << "Login: "; login = lireString("");
+        cout << "Mot de passe: "; mdp = lireString("");
+        groupe = lireInt("Groupe: ");
 
     int importerEtudiants(string f){
         string ligne;
@@ -982,23 +1262,37 @@ int main()
 
     EMSI.charger();
 
-    cout << "- - - - - - - - - - - - - - - - -\n- - - Bienvenue dans l'EMSI - - -\n- - - - - - - - - - - - - - - - -\n" << endl;
 
     while(programme){
         if(!connecte){
-            cout << "Nom d'utilisateur: ";
-            if(cin >> login){}else{cin.clear();}
-            if(login == "0") { programme = false; break; } // !! pour le test initial
-            cout << "Mot de passe: ";
-            if(cin >> mdp){}else{cin.clear();}
+            int role = 0;
+            do {
+                cout << "\n==================================================\n";
+                cout << "||- -- Bienvenue dans le Campus des Nobles - - -||\n";
+                cout << "==================================================\n";
+                cout << "|| 1. Etudiant                                  ||\n";
+                cout << "|| 2. Enseignant                                ||\n";
+                cout << "|| 3. Administratif                             ||\n";
+                cout << "|| 4. Parent                                    ||\n";
+                cout << "|| 0. Quitter                                   ||\n";
+                cout << "==================================================\n";
+                role = lireInt("Choix: ");
+                if(role == 0) { programme = false; break; }
+            } while(role < 0 || role > 4);
+            if(!programme) break;
+
+            login = lireString("Nom d'utilisateur: ");
+            if(login == "0") { programme = false; break; }
+            mdp = lireString("Mot de passe: ");
+
             user = EMSI.authentifier(login, mdp);
-            while(!user) {
-                cout << "\nAuthentification echouee\n" << endl;
+            while(!user || (role == 1 && user->getPermissions() != "ETUDIANT") || (role == 2 && user->getPermissions() != "ENSEIGNANT") || (role == 3 && user->getPermissions() != "ADMIN") || (role == 4 && user->getPermissions() != "ETUDIANT")) {
+                cout << "\nAuthentification echouee ou role incorrect\n" << endl;
                 cout << "Nom d'utilisateur: ";
-                cin >> login;
-                if(login == "0") { programme = false; return 0; } // !! pour le test initial
+                if(!getline(cin, login) || login.size() == 0) getline(cin, login);
+                if(login == "0") { programme = false; return 0; }
                 cout << "Mot de passe: ";
-                cin >> mdp;
+                if(!getline(cin, mdp) || mdp.size() == 0) getline(cin, mdp);
                 user = EMSI.authentifier(login, mdp);
             }
             cout << "\n- Connexion etablie en tant que " << user->getNom() << " " << user->getPrenom() << " -" << endl;
@@ -1007,76 +1301,82 @@ int main()
         } else {
             if(user->getPermissions() == "ETUDIANT") {
                 Etudiant *etu = dynamic_cast<Etudiant*>(user);
-                do {
-                    cout << "\n1. Consulter mes donnees\n";
-                    cout << "2. Exporter mes notes\n";
-                    cout << "3. Deconnexion\n";
-                    cout << "0. Quitter\n" << endl;
-                    while(!(cin >> choix)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
-                    switch(choix) {
-                        case 0: programme = false; cout << "\n+ Programme se termine +" << endl; break;
-                        case 1: EMSI.consulterDonnees(*etu); break;
-                        case 2: EMSI.etudiantExporterNotes(*etu); break;
-                        case 3:
-                            journaliser("Déconnexion",user->getNom() + " " + user->getPrenom());
-                            user = nullptr;
-                            cout << "\nUtilisateur se deconnecte.\n" << endl;
-                            connecte = false;
-                        break;
-                        default: cout << "\nChoix invalide\n";
-                    }
-                } while (choix != 0 && choix != 3);
+                    do {
+                        cout << "\n+------------------------------------------------+\n";
+                        cout << "|                 Menu Etudiant                   |\n";
+                        cout << "+------------------------------------------------+\n";
+                        cout << "| 1. Consulter mes informations personnelles    |\n";
+                        cout << "| 2. Consulter mes notes                        |\n";
+                        cout << "| 3. Consulter mes absences                     |\n";
+                        cout << "| 4. Consulter les modules                      |\n";
+                        cout << "| 5. Se deconnecter                             |\n";
+                        cout << "| 6. Quitter le programme                       |\n";
+                        cout << "+------------------------------------------------+\n";
+                        choix = lireInt("Choix: ");
+                        switch(choix) {
+                            case 6: programme = false; cout << "\n+ Programme se termine +" << endl; break;
+                            case 1: EMSI.consulterDonnees(*etu); break;
+                            case 2: EMSI.consulterNotesEtudiant(*etu); break;
+                            case 3: EMSI.consulterAbsencesEtudiant(*etu); break;
+                            case 4: EMSI.consulterModulesPourEtudiant(*etu); break;
+                            case 5: user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false; break;
+                            default: cout << "\nChoix invalide\n"; break;
+                        }
+                    } while (choix != 6 && choix != 5);
             }
             else if(user->getPermissions() == "ENSEIGNANT") {
                 Enseignant *ens = dynamic_cast<Enseignant*>(user);
                 do {
-                    cout << "\n1. Consulter mes donnees\n";
-                    cout << "2. Ajouter une note\n";
-                    cout << "3. Supprimer une note\n";
-                    cout << "4. Modifier une note\n";
-                    cout << "5. Consulter toutes les notes\n";
-                    cout << "6. Calculer la moyenne d'une groupe\n";
-                    cout << "7. Deconnexion\n";
-                    cout << "0. Quitter\n" << endl;
-                    while(!(cin >> choix)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
-                    switch(choix) {
-                        case 0: programme = false; cout << "\n+ Programme se termine +" << endl; break;
-                        case 1: EMSI.consulterDonnees(*ens); break;
-                        case 2: EMSI.enseignantAjouterNote(*ens); break;
-                        case 3: EMSI.enseignantSupprimerNote(*ens); break;
-                        case 4: EMSI.enseignantModifierNote(*ens); break;
-                        case 5: EMSI.enseignantConsulterNotes(*ens); break;
-                        case 6: EMSI.enseignantCalculerMoyenneGroupe(*ens); break;
-                        case 7:
-                            journaliser("Déconnexion",user->getNom() + " " + user->getPrenom());
-                            user = nullptr;
-                            cout << "\nUtilisateur se deconnecte.\n" << endl;
-                            connecte = false;
-                        break;
-                        default: cout << "\nChoix invalide\n";
-                    }
-                } while (choix != 0 && choix != 7);
+                        cout << "\n+------------------------------------------------+\n";
+                        cout << "|                Menu Enseignant                |\n";
+                        cout << "+------------------------------------------------+\n";
+                        cout << "| 1. Consulter mes modules                      |\n";
+                        cout << "| 2. Lister les etudiants d'un module           |\n";
+                        cout << "| 3. Ajouter ou modifier une note               |\n";
+                        cout << "| 4. Enregistrer une absence                    |\n";
+                        cout << "| 5. Enregistrer un avertissement               |\n";
+                        cout << "| 6. Consulter les absences                     |\n";
+                        cout << "| 7. Se deconnecter                             |\n";
+                        cout << "| 0. Quitter le programme                       |\n";
+                        cout << "+------------------------------------------------+\n";
+                        choix = lireInt("Choix: ");
+                        switch(choix) {
+                            case 0: programme = false; cout << "\n+ Programme se termine +" << endl; break;
+                            case 1: cout << "\nMes modules: " << ens->getModule() << "\n"; break;
+                            case 2: { int idmod = ens->getModule(); cout << "\nModule choisi (id) [par defaut votre module]: " << idmod << "\n"; EMSI.listerEtudiantsDansModule(idmod); break; }
+                            case 3: EMSI.enseignantAjouterOuModifierNote(*ens); break;
+                            case 4: { int idEtu, hours; cout << "\nID Etudiant: "; cin >> idEtu; cout << "Heures: "; cin >> hours; EMSI.enregistrerAbsence(idEtu, hours); break; }
+                            case 5: { int idEtu; cout << "\nID Etudiant pour avertissement: "; cin >> idEtu; EMSI.enregistrerAvertissement(idEtu); break; }
+                            case 6: EMSI.afficherAbsencesPourEnseignant(*ens); break;
+                            case 7: user = nullptr; cout << "\nUtilisateur se deconnecte.\n" << endl; connecte = false; break;
+                            default: cout << "\nChoix invalide\n"; break;
+                        }
+                    } while (choix != 0 && choix != 7);
             }
             else if(user->getPermissions() == "ADMIN") {
                 Administratif *adm = dynamic_cast<Administratif*>(user);
                 do {
-                    cout << "\n1. Consulter mes donnes\n";
-                    cout << "2. Ajouter un etudiant\n";
-                    cout << "3. Ajouter un enseignant\n";
-                    cout << "4. Supprimer un etudiant\n";
-                    cout << "5. Supprimer un enseignant\n";
-                    cout << "6. Modifier un etudiant\n";
-                    cout << "7. Modifier un enseignant\n";
-                    cout << "8. Exporter etudiants par groupe\n";
-                    cout << "9. Exporter enseignants\n";
-                    cout << "10. Ajouter un groupe\n";
-                    cout << "11. Supprimer un groupe\n";
-                    cout << "12. Consulter toutes les modules\n";
-                    cout << "13. Ajouter un module\n";
-                    cout << "14. Supprimer un module\n";
-                    cout << "15. Deconnexion\n";
-                    cout << "0. Quitter\n" << endl;
-                    while(!(cin >> choix)){ cout << "\nInvalide\n" << endl; cin.clear(); cin.ignore(numeric_limits<streamsize>::max(),'\n'); }
+                    cout << "\n+------------------------------------------------+\n";
+                    cout << "|            Menu Administrateur                 |\n";
+                    cout << "+------------------------------------------------+\n";
+                    cout << "| 1.  Consulter mes donnees                      |\n";
+                    cout << "| 2.  Ajouter un etudiant                        |\n";
+                    cout << "| 3.  Ajouter un enseignant                      |\n";
+                    cout << "| 4.  Supprimer un etudiant                      |\n";
+                    cout << "| 5.  Supprimer un enseignant                    |\n";
+                    cout << "| 6.  Modifier un etudiant                       |\n";
+                    cout << "| 7.  Modifier un enseignant                     |\n";
+                    cout << "| 8.  Exporter etudiants par groupe              |\n";
+                    cout << "| 9.  Exporter enseignants                       |\n";
+                    cout << "| 10. Ajouter un groupe                          |\n";
+                    cout << "| 11. Supprimer un groupe                        |\n";
+                    cout << "| 12. Consulter toutes les modules               |\n";
+                    cout << "| 13. Ajouter un module                          |\n";
+                    cout << "| 14. Supprimer un module                        |\n";
+                    cout << "| 15. Se deconnecter                             |\n";
+                    cout << "| 0.  Quitter le programme                       |\n";
+                    cout << "+------------------------------------------------+\n";
+                    choix = lireInt("Choix: ");
                     switch(choix) {
                         case 0: programme = false; cout << "\n+ Programme se termine +" << endl; break;
                         case 1: EMSI.consulterDonnees(*adm); break;
@@ -1110,3 +1410,4 @@ int main()
 
     return 0;
 }
+
